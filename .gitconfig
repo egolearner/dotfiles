@@ -1,0 +1,145 @@
+[user]
+[core]
+  autocrlf = input
+  #pager = diff-so-fancy | less --tabs=4 -RFX
+  pager = delta --diff-so-fancy
+  quotepath = false
+  symlinks = false
+[difftool "sourcetree"]
+  cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$LOCAL\" \"$REMOTE\"
+  path =
+[mergetool "sourcetree"]
+  cmd = /Applications/p4merge.app/Contents/MacOS/p4merge \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
+  trustExitCode = true
+[merge]
+        tool = idea
+[difftool "idea"]
+        cmd = idea diff $LOCAL $REMOTE --wait
+[mergetool "idea"]
+        cmd = idea merge $LOCAL $REMOTE $BASE $MERGED --wait
+        trustExitCode = true
+[mergetool "vimdiff"]
+  cmd = nvim -n -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
+[diff]
+  tool = vimdiff
+[difftool "vimdiff"]
+  cmd = nvim -d \"$LOCAL\" \"$REMOTE\"
+
+[alias]
+  c = commit
+  d = diff
+  dt = difftool
+  mt = mergetool
+  dty = difftool -y
+  la = !git config -l | grep alias | cut -c 7-
+  ln = log --name-only
+  s = show
+  sn = show --name-only
+  #l = log --pretty=format:%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%an] --graph --abbrev-commit
+  l = log --pretty=format:'%Cblue[%an] %C(yellow)%h%Cred%d %Creset%s' --graph --abbrev-commit
+  co = checkout
+  cod = checkout --
+  st = status
+  p = pull
+  po = push origin
+  pn = !git push -u origin `git rev-parse --abbrev-ref HEAD`
+  dc = diff --cached
+
+
+  cob = checkout -b
+  coo = !git fetch && git checkout
+  br = branch
+  brd = branch -d
+  brD = branch -D
+  merged = branch --merged
+  dmerged = git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d
+  aa = add -A .
+  cm = commit -m
+  aacm = !git add -A . && git commit -m
+  cp = cherry-pick
+  dev = !git checkout dev && git pull origin dev
+  staging = !git checkout staging && git pull origin staging
+  master = !git checkout master && git pull origin
+  pod = push origin dev
+  pos = push origin staging
+  pom = push origin master
+  poh = push origin HEAD
+  pogm = !git push origin gh-pages && git checkout master && git pull origin master && git rebase gh-pages && git push origin master && git checkout gh-pages
+  pomg = !git push origin master && git checkout gh-pages && git pull origin gh-pages && git rebase master && git push origin gh-pages && git checkout master
+  plo = pull origin
+  plod = pull origin dev
+  plos = pull origin staging
+  plom = pull origin master
+  ploh = pull origin HEAD
+  unstage = reset --soft HEAD^
+  f = !git ls-files | grep -i
+  gr = grep -Ii
+
+  ls = log --pretty=format:%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn] --decorate
+  ll = log --pretty=format:%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn] --decorate --numstat
+# View the current working tree status using the short format
+# Show the diff between the latest commit and the current state
+  #d = !"git diff-index --quiet HEAD -- || clear; git --no-pager diff --patch-with-stat"
+# `git di $number` shows the diff between the state `$number` revisions ago and the current state
+  di = "!d() { git diff --patch-with-stat HEAD~$1; }; git diff-index --quiet HEAD -- || clear; d"
+# Pull in remote changes for the current repository and all its submodules
+  ps = "!git pull -v; git submodule foreach git pull origin master"
+# Clone a repository including all submodules
+  cr = clone --recursive
+# Commit all changes
+  ca = !git add -A && git commit -av
+# Switch to a branch, creating it if necessary
+  go = "!f() { git checkout -b \"$1\" 2> /dev/null || git checkout \"$1\"; }; f"
+# Show verbose output about tags, branches or remotes
+  tags = tag -l
+  branches = branch -a
+  remotes = remote -v
+# Amend the currently staged files to the latest commit
+  amend = commit --amend --reuse-message=HEAD
+# Credit an author on the latest commit
+  credit = "!f() { git commit --amend --author \"$1 <$2>\" -C HEAD; }; f"
+# Interactive rebase with the given number of latest commits
+  reb = "!r() { git rebase -i HEAD~$1; }; r"
+# Remove the old tag with this name and tag the latest commit with it.
+  retag = "!r() { git tag -d $1 && git push origin :refs/tags/$1 && git tag $1; }; r"
+# Find branches containing commit
+  fb = "!f() { git branch -a --contains $1; }; f"
+# Find tags containing commit
+  ft = "!f() { git describe --always --contains $1; }; f"
+# Find commits by source code
+  fc = "!f() { git log --pretty=format:'%C(yellow)%h  %Cblue%ad  %Creset%s%Cgreen  [%cn] %Cred%d' --decorate --date=short -S$1; }; f"
+# Find commits by commit message
+  fm = "!f() { git log --pretty=format:'%C(yellow)%h  %Cblue%ad  %Creset%s%Cgreen  [%cn] %Cred%d' --decorate --date=short --grep=$1; }; f"
+# Remove branches that have already been merged with master
+# a.k.a. ‘delete merged’
+  dm = !git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d
+# List contributors with number of commits
+  contributors = shortlog --summary --numbered
+# Merge GitHub pull request on top of the current branch or,
+# if a branch name is specified, on top of the specified branch
+  mpr = "!f() { \t\tdeclare currentBranch=\"$(git symbolic-ref --short HEAD)\"; \t\tdeclare branch=\"${2:-$currentBranch}\"; \t\tif [ $(printf \"%s\" \"$1\" | grep '^[0-9]\\+$' > /dev/null; printf $?) -eq 0 ]; then \t\tgit fetch origin refs/pull/$1/head:pr/$1 && \t\tgit checkout -B $branch && \t\tgit rebase $branch pr/$1 && \t\tgit checkout -B $branch && \t\tgit merge pr/$1 && \t\tgit branch -D pr/$1 && \t\tgit commit --amend -m \"$(git log -1 --pretty=%B)\n\nCloses #$1.\"; \t\tfi \t\t}; f"
+  df = diff HEAD^ HEAD
+
+[push]
+  default = simple
+[tig]
+  diff-options = -b
+
+[tig "bind"]
+  # ! run forground
+  # > make "Press ENTER to continue" disappear
+  diff = D >!git difftool --tool=vimdiff --trust-exit-code --no-prompt %(commit)^! -- %(file)
+  stage = D >!sh -c "git difftool --tool=vimdiff --trust-exit-code --no-prompt `expr '%(status)' : 'Staged changes' >/dev/null && echo --cached` -- '%(file)'"
+
+[credential]
+  helper = osxkeychain
+[gc]
+  auto = 0
+[rerere]
+  enabled = true
+[includeIf "gitdir:~/Project/personal/"]
+        path = ~/.gitconfig_personal
+[http]
+  postBuffer = 524288000
+[safe]
+  directory = *
